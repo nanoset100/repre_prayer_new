@@ -31,6 +31,7 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
   final TextEditingController prayerContentController = TextEditingController();
   bool _isLoading = false;
   String? _lastAiPrayer;
+  bool _isPrayerTypeEditable = false;
 
   @override
   void initState() {
@@ -57,15 +58,33 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('selectedPrayerType', categories[idx]['label']);
     // ignore: avoid_print
-    print(
-      '[SharedPreferences] selectedPrayerType: ${categories[idx]['label']}',
-    );
+    // print(
+    //   '[SharedPreferences] selectedPrayerType: ${categories[idx]['label']}',
+    // );
+  }
+
+  void onPrayerTypeSelected(String type) {
+    setState(() {
+      if (type == '특별예배') {
+        prayerTypeController.text = '';
+        _isPrayerTypeEditable = true;
+      } else {
+        prayerTypeController.text = type;
+        _isPrayerTypeEditable = false;
+      }
+    });
   }
 
   void _onCategoryTap(int idx) async {
     setState(() {
       selectedIndex = idx;
-      prayerTypeController.text = categories[idx]['label'];
+      if (categories[idx]['label'] == '특별예배') {
+        prayerTypeController.text = '';
+        _isPrayerTypeEditable = true;
+      } else {
+        prayerTypeController.text = categories[idx]['label'];
+        _isPrayerTypeEditable = false;
+      }
     });
     await _saveSelectedPrayerType(idx);
   }
@@ -107,16 +126,20 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
   Future<void> _getAiPrayer() async {
     if (_isLoading) return;
     final prayerType = prayerTypeController.text.trim();
-    final validNames = categories.map((c) => c['label'] as String).toList();
-    if (!validNames.contains(prayerType)) {
+    // 특별예배일 때 예배명 미입력 시 안내
+    if (_isPrayerTypeEditable && prayerType.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('예배이름을 입력하세요.')));
       return;
     }
     setState(() => _isLoading = true);
-    final prompt = "예배 종류: $prayerType\n이 내용을 바탕으로 약 200자 이내의 짧은 대표기도문을 완성해줘.";
-    print('[OpenAI 프롬프트] $prompt');
+    // 프롬프트에 예배명 직접 삽입
+    final prompt = '대표기도문을 작성해주세요.\n예배명: $prayerType';
+    // print('[OpenAI 프롬프트] $prompt');
     try {
-      final aiResult = await OpenAIApiService.generatePrayer(prompt);
-      print('[OpenAI 응답] $aiResult');
+      final aiResult = await OpenAIApiService.generatePrayer(prayerType);
+      // print('[OpenAI 응답] $aiResult');
       setState(() {
         prayerContentController.text = aiResult;
         _lastAiPrayer = aiResult;
@@ -213,9 +236,9 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
                   children: [
                     Expanded(
                       child: TextField(
-                        readOnly: true,
                         controller: prayerTypeController,
                         decoration: InputDecoration(
+                          hintText: _isPrayerTypeEditable ? '예배이름을 입력하세요' : '',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(color: mainGreen, width: 2),
@@ -229,6 +252,7 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
                         ),
+                        readOnly: !_isPrayerTypeEditable,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -288,7 +312,14 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
                   children: [
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _getAiPrayer,
+                        onPressed:
+                            (_isLoading ||
+                                    (_isPrayerTypeEditable &&
+                                        prayerTypeController.text
+                                            .trim()
+                                            .isEmpty))
+                                ? null
+                                : _getAiPrayer,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: gridBg,
                           foregroundColor: mainGreen,

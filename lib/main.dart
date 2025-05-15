@@ -6,12 +6,12 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await dotenv.load(fileName: ".env");
-    print(
-      'API KEY: [32m[1m[4m[7m${dotenv.env['OPENAI_API_KEY']}[0m',
-    ); // 실제 값 확인용
+    // print(
+    //   'API KEY: [32m[1m[4m[7m${dotenv.env['OPENAI_API_KEY']}[0m',
+    // ); // 실제 값 확인용
   } catch (e, st) {
-    print('dotenv [31m로드 실패[0m: $e');
-    print('STACK: $st');
+    // print('dotenv [31m로드 실패[0m: $e');
+    // print('STACK: $st');
   }
   runApp(const MyApp());
 }
