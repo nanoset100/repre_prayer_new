@@ -56,10 +56,11 @@ class OpenAIApiService {
       } else {
         throw Exception('OpenAI API 오류: ${response.body}');
       }
-    } catch (e, st) {
+    } catch (e) {
       // print('[OpenAI] 예외 발생: $e');
       // print('[OpenAI] STACK: $st');
-      rethrow;
+      // 기술적 에러 메시지를 노출하지 않도록 일반적 오류로 변환
+      throw Exception('기도문 생성에 실패했습니다. 네트워크 연결을 확인해주세요.');
     }
   }
 }

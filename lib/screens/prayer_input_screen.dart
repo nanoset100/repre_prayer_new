@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/prayer_model.dart';
 import '../utils/storage_service.dart';
+import '../utils/network_helper.dart';
 import 'prayer_list_screen.dart';
 import '../services/openai_api_service.dart';
 
@@ -89,12 +90,13 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
     await _saveSelectedPrayerType(idx);
   }
 
-  void _savePrayer() async {
+  Future<void> _savePrayer() async {
     final content = prayerContentController.text.trim();
     if (content.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('기도문을 입력하세요.')));
+      ).showSnackBar(const SnackBar(content: Text('내용을 입력하세요')));
       return;
     }
     final now = DateTime.now();
@@ -105,6 +107,7 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
       content: content,
     );
     await StorageService.savePrayer(prayer);
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('저장 완료'),
@@ -117,9 +120,11 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
     });
     // 1초 후 자동으로 PrayerListScreen으로 이동
     Future.delayed(const Duration(milliseconds: 1000), () {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const PrayerListScreen()),
-      );
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const PrayerListScreen()),
+        );
+      }
     });
   }
 
@@ -134,23 +139,65 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
       return;
     }
     setState(() => _isLoading = true);
-    // 프롬프트에 예배명 직접 삽입
-    final prompt = '대표기도문을 작성해주세요.\n예배명: $prayerType';
-    // print('[OpenAI 프롬프트] $prompt');
+
+    // 네트워크 연결 상태 확인 (더 관대한 체크)
+    await NetworkHelper.isConnectedForApi();
+
+    // 네트워크 체크가 실패해도 실제 API 호출은 시도
+    // Google Play Store 환경에서는 도메인 체크가 실패할 수 있지만
+    // 실제 API는 작동할 수 있기 때문
     try {
       final aiResult = await OpenAIApiService.generatePrayer(prayerType);
-      // print('[OpenAI 응답] $aiResult');
       setState(() {
         prayerContentController.text = aiResult;
         _lastAiPrayer = aiResult;
       });
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('AI 기도문 생성 실패: $e')));
+      debugPrint('AI 생성 실패: $e');
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: const Text('기도문 생성 안내\n(Prayer Generation Notice)'),
+                content: const Text(
+                  'AI 기도문 생성이 어려운 상황입니다.\n샘플 기도문을 대신 사용하시겠어요?\n\n'
+                  'AI prayer generation is currently unavailable.\nWould you like to use a sample prayer instead?',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _insertSamplePrayer(prayerType);
+                    },
+                    child: const Text('예 (Yes)'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('아니오 (No)'),
+                  ),
+                ],
+              ),
+        );
+      }
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  void _insertSamplePrayer(String prayerType) {
+    String samplePrayer =
+        '사랑과 은혜의 하나님, 이 시간 저희 예배를 받아주시옵소서.\n주님의 은혜와 사랑이 우리 모두에게 충만하게 임하게 하시고,\n말씀을 통해 새 힘을 얻게 하소서.\n예수님의 이름으로 기도합니다. 아멘.';
+    setState(() {
+      prayerContentController.text = samplePrayer;
+      _lastAiPrayer = samplePrayer;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('샘플 기도문이 입력되었습니다. (Sample prayer inserted)'),
+        duration: Duration(seconds: 3),
+      ),
+    );
   }
 
   @override
@@ -265,7 +312,7 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
                         border: Border.all(color: mainGreen, width: 2),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
+                            color: Colors.black.withValues(alpha: 0.04),
                             blurRadius: 2,
                             offset: const Offset(0, 2),
                           ),
@@ -353,7 +400,7 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
                           backgroundColor: saveBtnBg,
                           foregroundColor: Colors.black,
                           elevation: 2,
-                          shadowColor: Colors.black.withOpacity(0.08),
+                          shadowColor: Colors.black.withValues(alpha: 0.08),
                           side: BorderSide(color: Colors.grey[300]!, width: 2),
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(
