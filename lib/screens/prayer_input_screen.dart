@@ -99,33 +99,57 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
       ).showSnackBar(const SnackBar(content: Text('내용을 입력하세요')));
       return;
     }
-    final now = DateTime.now();
-    final prayer = PrayerModel(
-      id: now.microsecondsSinceEpoch.toString(),
-      date: DateFormat('yyyy.MM.dd').format(now),
-      prayerType: prayerTypeController.text.trim(),
-      content: content,
-    );
-    await StorageService.savePrayer(prayer);
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('저장 완료'),
-        duration: Duration(milliseconds: 1000),
-      ),
-    );
-    prayerContentController.clear();
-    setState(() {
-      _lastAiPrayer = null;
-    });
-    // 1초 후 자동으로 PrayerListScreen으로 이동
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const PrayerListScreen()),
-        );
-      }
-    });
+    
+    // 예배 타입 확인
+    final prayerType = prayerTypeController.text.trim();
+    if (prayerType.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('예배 종류를 선택하세요')));
+      return;
+    }
+    
+    try {
+      final now = DateTime.now();
+      final prayer = PrayerModel(
+        id: now.microsecondsSinceEpoch.toString(),
+        date: DateFormat('yyyy.MM.dd').format(now),
+        prayerType: prayerType,
+        content: content,
+      );
+      await StorageService.savePrayer(prayer);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('저장 완료'),
+          duration: Duration(milliseconds: 1000),
+          backgroundColor: Color(0xFF4CAF50),
+        ),
+      );
+      prayerContentController.clear();
+      setState(() {
+        _lastAiPrayer = null;
+      });
+      // 1초 후 자동으로 PrayerListScreen으로 이동
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const PrayerListScreen()),
+          );
+        }
+      });
+    } catch (e) {
+      debugPrint('기도문 저장 실패: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('저장에 실패했습니다. 다시 시도해주세요.'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _getAiPrayer() async {
@@ -155,14 +179,24 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
     } catch (e) {
       debugPrint('AI 생성 실패: $e');
       if (mounted) {
+        // 네트워크 오류인지 확인
+        final isNetworkError = e.toString().contains('SocketException') ||
+            e.toString().contains('TimeoutException') ||
+            e.toString().contains('연결');
+
+        final errorMessage = isNetworkError
+            ? '인터넷 연결을 확인해주세요.\n네트워크가 불안정하거나 연결이 끊어졌습니다.\n\n'
+                'Please check your internet connection.\nNetwork is unstable or disconnected.'
+            : 'AI 서비스가 일시적으로 불안정합니다.\n잠시 후 다시 시도해주세요.\n\n'
+                'AI service is temporarily unavailable.\nPlease try again in a moment.';
+
         showDialog(
           context: context,
           builder:
               (context) => AlertDialog(
                 title: const Text('기도문 생성 안내\n(Prayer Generation Notice)'),
-                content: const Text(
-                  'AI 기도문 생성이 어려운 상황입니다.\n샘플 기도문을 대신 사용하시겠어요?\n\n'
-                  'AI prayer generation is currently unavailable.\nWould you like to use a sample prayer instead?',
+                content: Text(
+                  '$errorMessage\n샘플 기도문을 대신 사용하시겠어요?\nWould you like to use a sample prayer instead?',
                 ),
                 actions: [
                   TextButton(

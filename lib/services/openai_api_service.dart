@@ -5,24 +5,33 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class OpenAIApiService {
   static String get _apiKey => dotenv.env['OPENAI_API_KEY'] ?? '';
   static const String _apiUrl = 'https://api.openai.com/v1/chat/completions';
+  static const int _maxRetries = 2; // 최대 재시도 횟수
+  static const Duration _timeout = Duration(seconds: 30); // API 타임아웃
 
   static Future<String> generatePrayer(String prayerType) async {
     // print('[OpenAI] generatePrayer 호출됨');
     // print('[OpenAI] API KEY: \x1B[32m"+_apiKey+"\x1B[0m');
     // print('[OpenAI] 예배명: $prayerType');
-    try {
-      final response = await http.post(
-        Uri.parse(_apiUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_apiKey',
-        },
-        body: jsonEncode({
-          'model': 'gpt-3.5-turbo',
-          'messages': [
-            {
-              'role': 'system',
-              'content': '''
+
+    // 재시도 로직
+    int retryCount = 0;
+    Exception? lastException;
+
+    while (retryCount <= _maxRetries) {
+      try {
+        final response = await http.post(
+          Uri.parse(_apiUrl),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $_apiKey',
+          },
+          body: jsonEncode({
+            'store': false,
+            'model': 'gpt-4o-mini',
+            'messages': [
+              {
+                'role': 'system',
+                'content': '''
 당신은 교회 예배를 위한 대표기도문 작성을 도와주는 목사님입니다.
 기도문의 길이는 천천히 읽었을 때 약 5분 정도 걸리도록 작성해주세요.
 이를 위해 다음 사항을 꼭 지켜주세요:
@@ -39,28 +48,48 @@ class OpenAIApiService {
 11. 의미 없이 반복되는 표현을 피하고, 진심을 담아 정중하고 은혜롭게 작성해주세요.
 12. 기도의 시작부터 마침까지 자연스러운 흐름을 유지하여 듣는 사람이 끝까지 집중할 수 있도록 합니다.
 ''',
-            },
-            {'role': 'user', 'content': '대표기도문을 작성해주세요.'},
-          ],
-          'max_tokens': 2000,
-          'temperature': 0.7,
-        }),
-      );
-      // print(
-      //   '[OpenAI] 응답 코드: \x1B[34m${response.statusCode}\x1B[0m',
-      // );
-      // print('[OpenAI] 응답 바디: ${response.body}');
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['choices'][0]['message']['content'].toString().trim();
-      } else {
-        throw Exception('OpenAI API 오류: ${response.body}');
+              },
+              {'role': 'user', 'content': '대표기도문을 작성해주세요.'},
+            ],
+            'max_tokens': 2000,
+            'temperature': 0.7,
+          }),
+        ).timeout(_timeout); // 타임아웃 설정
+
+        // print(
+        //   '[OpenAI] 응답 코드: \x1B[34m${response.statusCode}\x1B[0m',
+        // );
+        // print('[OpenAI] 응답 바디: ${response.body}');
+
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          return data['choices'][0]['message']['content'].toString().trim();
+        } else if (response.statusCode == 429 || response.statusCode >= 500) {
+          // 429 (Too Many Requests) 또는 5xx 서버 오류는 재시도
+          lastException = Exception('서버 응답 오류: ${response.statusCode}');
+          retryCount++;
+          if (retryCount <= _maxRetries) {
+            await Future.delayed(Duration(seconds: retryCount)); // 점진적 대기
+            continue;
+          }
+        } else {
+          // 4xx 클라이언트 오류는 재시도 없이 즉시 실패
+          throw Exception('API 요청 오류: ${response.statusCode}');
+        }
+      } catch (e) {
+        // print('[OpenAI] 예외 발생 (시도 ${retryCount + 1}/${_maxRetries + 1}): $e');
+        lastException = e is Exception ? e : Exception(e.toString());
+        retryCount++;
+
+        if (retryCount <= _maxRetries) {
+          await Future.delayed(Duration(seconds: retryCount)); // 점진적 대기
+          continue;
+        }
       }
-    } catch (e) {
-      // print('[OpenAI] 예외 발생: $e');
-      // print('[OpenAI] STACK: $st');
-      // 기술적 에러 메시지를 노출하지 않도록 일반적 오류로 변환
-      throw Exception('기도문 생성에 실패했습니다. 네트워크 연결을 확인해주세요.');
     }
+
+    // 모든 재시도 실패
+    // print('[OpenAI] 모든 재시도 실패');
+    throw Exception('AI 서비스가 일시적으로 불안정합니다. 잠시 후 다시 시도해주세요.');
   }
 }
