@@ -80,6 +80,10 @@
 -keep class com.google.android.play.core.** { *; }
 -dontwarn com.google.android.play.core.**
 
+# flutter_dotenv 관련 (환경 변수 로드)
+-keep class biz.laenger.** { *; }
+-keep class io.flutter.plugins.** { *; }
+
 # 최적화 비활성화 (Flutter 호환성)
 -dontoptimize
 -dontpreverify

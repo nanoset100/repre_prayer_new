@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
@@ -9,9 +10,13 @@ class OpenAIApiService {
   static const Duration _timeout = Duration(seconds: 30); // API 타임아웃
 
   static Future<String> generatePrayer(String prayerType) async {
-    // print('[OpenAI] generatePrayer 호출됨');
-    // print('[OpenAI] API KEY: \x1B[32m"+_apiKey+"\x1B[0m');
-    // print('[OpenAI] 예배명: $prayerType');
+    debugPrint('[OpenAI] generatePrayer 호출됨');
+    debugPrint('[OpenAI] API KEY 길이: ${_apiKey.length} (비어있음: ${_apiKey.isEmpty})');
+    if (_apiKey.isEmpty) {
+      debugPrint('[OpenAI] ❌ API 키가 비어있습니다!');
+      throw Exception('API 키가 설정되지 않았습니다. 앱을 재설치해주세요.');
+    }
+    debugPrint('[OpenAI] 예배명: $prayerType');
 
     // 재시도 로직
     int retryCount = 0;
@@ -56,10 +61,10 @@ class OpenAIApiService {
           }),
         ).timeout(_timeout); // 타임아웃 설정
 
-        // print(
-        //   '[OpenAI] 응답 코드: \x1B[34m${response.statusCode}\x1B[0m',
-        // );
-        // print('[OpenAI] 응답 바디: ${response.body}');
+        debugPrint('[OpenAI] 응답 코드: ${response.statusCode}');
+        if (response.statusCode != 200) {
+          debugPrint('[OpenAI] 응답 바디: ${response.body}');
+        }
 
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
@@ -77,11 +82,12 @@ class OpenAIApiService {
           throw Exception('API 요청 오류: ${response.statusCode}');
         }
       } catch (e) {
-        // print('[OpenAI] 예외 발생 (시도 ${retryCount + 1}/${_maxRetries + 1}): $e');
+        debugPrint('[OpenAI] 예외 발생 (시도 ${retryCount + 1}/${_maxRetries + 1}): $e');
         lastException = e is Exception ? e : Exception(e.toString());
         retryCount++;
 
         if (retryCount <= _maxRetries) {
+          debugPrint('[OpenAI] ${retryCount}초 대기 후 재시도...');
           await Future.delayed(Duration(seconds: retryCount)); // 점진적 대기
           continue;
         }
@@ -89,7 +95,7 @@ class OpenAIApiService {
     }
 
     // 모든 재시도 실패
-    // print('[OpenAI] 모든 재시도 실패');
+    debugPrint('[OpenAI] ❌ 모든 재시도 실패. 마지막 에러: $lastException');
     throw Exception('AI 서비스가 일시적으로 불안정합니다. 잠시 후 다시 시도해주세요.');
   }
 }

@@ -35,8 +35,8 @@ android {
         applicationId = "com.nanoset.repre_prayer_app"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = 112
-        versionName = "1.1.1"
+        versionCode = 113
+        versionName = "1.1.2"
     }
 
     // 서명 설정 추가

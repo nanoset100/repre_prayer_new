@@ -27,9 +27,16 @@ Future<void> main() async {
 
   try {
     await dotenv.load(fileName: ".env");
-    // debugPrint('API KEY: ${dotenv.env['OPENAI_API_KEY']}');
+    final apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
+    debugPrint('[ENV] .env 파일 로드 성공');
+    debugPrint('[ENV] API KEY 길이: ${apiKey.length} (비어있음: ${apiKey.isEmpty})');
+    if (apiKey.isEmpty) {
+      debugPrint('[ENV] ⚠️ 경고: API 키가 비어있습니다!');
+    } else {
+      debugPrint('[ENV] ✓ API 키 정상 로드 (${apiKey.substring(0, 10)}...)');
+    }
   } catch (e) {
-    debugPrint('환경 설정 로드 실패: $e');
+    debugPrint('[ENV] ❌ 환경 설정 로드 실패: $e');
     // 사용자에게는 오류 메시지를 직접 노출하지 않음
   }
 
