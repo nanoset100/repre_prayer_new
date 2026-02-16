@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/prayer_model.dart';
 import '../utils/storage_service.dart';
 import '../utils/network_helper.dart';
+import '../utils/update_checker.dart';
 import 'prayer_list_screen.dart';
 import '../services/openai_api_service.dart';
 
@@ -39,6 +40,11 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
     super.initState();
     _loadSelectedPrayerType();
     prayerTypeController.text = categories[selectedIndex]['label'];
+
+    // 앱 시작 시 업데이트 체크
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UpdateChecker.checkUpdate(context);
+    });
   }
 
   Future<void> _loadSelectedPrayerType() async {
