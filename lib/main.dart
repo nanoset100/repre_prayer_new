@@ -2,7 +2,9 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'screens/prayer_input_screen.dart';
+import 'services/ad_manager.dart';
 
 // 전역 에러 핸들러 설정
 void setupErrorHandling() {
@@ -21,6 +23,8 @@ void setupErrorHandling() {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
+  await AdManager.instance.initialize();
 
   // 전역 에러 핸들링 설정
   setupErrorHandling();

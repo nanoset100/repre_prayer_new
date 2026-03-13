@@ -7,6 +7,8 @@ import '../utils/network_helper.dart';
 import '../utils/update_checker.dart';
 import 'prayer_list_screen.dart';
 import '../services/openai_api_service.dart';
+import '../services/remote_config_service.dart';
+import '../services/ad_manager.dart';
 
 class PrayerInputScreen extends StatefulWidget {
   const PrayerInputScreen({super.key});
@@ -16,17 +18,19 @@ class PrayerInputScreen extends StatefulWidget {
 }
 
 class _PrayerInputScreenState extends State<PrayerInputScreen> {
-  final List<Map<String, dynamic>> categories = [
-    {'label': '주일예배', 'icon': Icons.wb_sunny},
-    {'label': '금요예배', 'icon': Icons.star},
-    {'label': '구역예배', 'icon': Icons.groups},
-    {'label': '새벽예배', 'icon': Icons.brightness_5},
-    {'label': '심방예배', 'icon': Icons.home_repair_service},
-    {'label': '수요예배', 'icon': Icons.water_drop},
-    {'label': '가정예배', 'icon': Icons.home},
-    {'label': '병원예배', 'icon': Icons.local_hospital},
-    {'label': '특별예배', 'icon': Icons.event},
-  ];
+  List<Map<String, dynamic>> categories = [];
+  final Map<String, IconData> _iconMap = {
+    '주일예배': Icons.wb_sunny,
+    '금요예배': Icons.star,
+    '금요일예배': Icons.star,
+    '구역예배': Icons.groups,
+    '새벽예배': Icons.brightness_5,
+    '심방예배': Icons.home_repair_service,
+    '수요예배': Icons.water_drop,
+    '가정예배': Icons.home,
+    '병원예배': Icons.local_hospital,
+    '특별예배': Icons.event,
+  };
 
   int selectedIndex = 3;
   final TextEditingController prayerTypeController = TextEditingController();
@@ -38,13 +42,65 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
   @override
   void initState() {
     super.initState();
+    _initRemoteConfig();
     _loadSelectedPrayerType();
-    prayerTypeController.text = categories[selectedIndex]['label'];
+    // 초기값 설정 (가져오는 동안 빈 화면 방지)
+    categories = [
+      {'label': '주일예배', 'icon': Icons.wb_sunny},
+      {'label': '금요예배', 'icon': Icons.star},
+      {'label': '구역예배', 'icon': Icons.groups},
+      {'label': '새벽예배', 'icon': Icons.brightness_5},
+      {'label': '심방예배', 'icon': Icons.home_repair_service},
+      {'label': '수요예배', 'icon': Icons.water_drop},
+      {'label': '가정예배', 'icon': Icons.home},
+      {'label': '병원예배', 'icon': Icons.local_hospital},
+      {'label': '특별예배', 'icon': Icons.event},
+    ];
+    _updatePrayerTypeUI(selectedIndex);
+  }
 
-    // 앱 시작 시 업데이트 체크
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      UpdateChecker.checkUpdate(context);
+  void _updatePrayerTypeUI(int idx) {
+    if (idx < 0 || idx >= categories.length) return;
+    
+    setState(() {
+      selectedIndex = idx;
+      final label = categories[idx]['label'];
+      if (label == '특별예배') {
+        prayerTypeController.text = '';
+        _isPrayerTypeEditable = true;
+      } else {
+        prayerTypeController.text = label;
+        _isPrayerTypeEditable = false;
+      }
     });
+  }
+
+  Future<void> _initRemoteConfig() async {
+    final rc = RemoteConfigService();
+    await rc.initialize();
+    _updateCategories();
+    if (mounted) {
+      UpdateChecker.checkUpdate(context);
+    }
+  }
+
+  void _updateCategories() {
+    final rc = RemoteConfigService();
+    final labels = rc.getCategories();
+    setState(() {
+      categories = labels.map((label) {
+        return {
+          'label': label,
+          'icon': _iconMap[label] ?? Icons.church, // 매칭되는 아이콘 없으면 기본 아이콘
+        };
+      }).toList();
+      
+      // 선택된 인덱스 범위 확인
+      if (selectedIndex >= categories.length) {
+        selectedIndex = 0;
+      }
+    });
+    _updatePrayerTypeUI(selectedIndex);
   }
 
   Future<void> _loadSelectedPrayerType() async {
@@ -53,10 +109,7 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
     if (selected != null) {
       final idx = categories.indexWhere((c) => c['label'] == selected);
       if (idx != -1) {
-        setState(() {
-          selectedIndex = idx;
-          prayerTypeController.text = categories[idx]['label'];
-        });
+        _updatePrayerTypeUI(idx);
       }
     }
   }
@@ -71,28 +124,14 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
   }
 
   void onPrayerTypeSelected(String type) {
-    setState(() {
-      if (type == '특별예배') {
-        prayerTypeController.text = '';
-        _isPrayerTypeEditable = true;
-      } else {
-        prayerTypeController.text = type;
-        _isPrayerTypeEditable = false;
-      }
-    });
+    final idx = categories.indexWhere((c) => c['label'] == type);
+    if (idx != -1) {
+      _updatePrayerTypeUI(idx);
+    }
   }
 
   void _onCategoryTap(int idx) async {
-    setState(() {
-      selectedIndex = idx;
-      if (categories[idx]['label'] == '특별예배') {
-        prayerTypeController.text = '';
-        _isPrayerTypeEditable = true;
-      } else {
-        prayerTypeController.text = categories[idx]['label'];
-        _isPrayerTypeEditable = false;
-      }
-    });
+    _updatePrayerTypeUI(idx);
     await _saveSelectedPrayerType(idx);
   }
 
@@ -326,6 +365,11 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
                         controller: prayerTypeController,
                         decoration: InputDecoration(
                           hintText: _isPrayerTypeEditable ? '예배이름을 입력하세요' : '',
+                          hintStyle: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.normal,
+                            color: Colors.grey,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide(color: mainGreen, width: 2),
@@ -376,24 +420,6 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
                   ],
                 ),
                 const SizedBox(height: 14),
-                // 기도문 입력 필드
-                TextField(
-                  controller: prayerContentController,
-                  maxLines: 3,
-                  decoration: InputDecoration(
-                    hintText: '기도문을 저장하고 크게 보세요',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: mainGreen, width: 2),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 14,
-                    ),
-                  ),
-                  style: const TextStyle(fontSize: 16),
-                ),
-                const SizedBox(height: 18),
                 // 버튼 2개
                 Row(
                   children: [
@@ -408,8 +434,8 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
                                 ? null
                                 : _getAiPrayer,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: gridBg,
-                          foregroundColor: mainGreen,
+                          backgroundColor: const Color(0xFFF5C842),
+                          foregroundColor: Colors.black87,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 18),
                           shape: RoundedRectangleBorder(
@@ -427,6 +453,7 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
                                   height: 22,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
+                                    color: Colors.black54,
                                   ),
                                 )
                                 : const Text('🙏 AI 도움받기'),
@@ -456,7 +483,37 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 14),
+                // 기도문 입력/결과 박스 (항상 표시, 편집 가능)
+                TextField(
+                  controller: prayerContentController,
+                  maxLines: null,
+                  minLines: 6,
+                  decoration: InputDecoration(
+                    hintText: 'AI 도움받기를 누르면 예배기도문이 나옵니다',
+                    hintStyle: const TextStyle(
+                      fontSize: 15,
+                      color: Colors.grey,
+                    ),
+                    filled: true,
+                    fillColor: gridBg,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(color: mainGreen, width: 2),
+                    ),
+                    contentPadding: const EdgeInsets.all(18),
+                  ),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Colors.black87,
+                    height: 1.6,
+                  ),
+                ),
+                const SizedBox(height: 14),
                 // 내 기도문 보기 버튼
                 SizedBox(
                   width: double.infinity,
@@ -488,28 +545,13 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
                   ),
                 ),
                 const SizedBox(height: 22),
-                // 생성된 기도문 박스 (AI 생성 시 표시)
-                if (_lastAiPrayer != null && _lastAiPrayer!.isNotEmpty)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(18),
-                    margin: const EdgeInsets.only(bottom: 18),
-                    decoration: BoxDecoration(
-                      color: gridBg,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Text(
-                      _lastAiPrayer!,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
               ],
             ),
           ),
         ),
+      ),
+      bottomNavigationBar: SafeArea(
+        child: AdManager.instance.buildBannerAd(context),
       ),
     );
   }

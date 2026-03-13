@@ -20,10 +20,23 @@ class _PrayerListScreenState extends State<PrayerListScreen> {
   }
 
   Future<void> _loadPrayers() async {
-    final loaded = await StorageService.loadPrayers();
-    setState(() {
-      prayers = loaded;
-    });
+    try {
+      final loaded = await StorageService.loadPrayers();
+      if (!mounted) return;
+      setState(() {
+        prayers = loaded;
+      });
+    } catch (e) {
+      debugPrint('기도문 로드 실패: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('기도문을 불러오는 중 오류가 발생했습니다.'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
   }
 
   Future<void> _deletePrayer(String id) async {
@@ -46,8 +59,28 @@ class _PrayerListScreenState extends State<PrayerListScreen> {
           ),
     );
     if (confirm != true) return;
-    await StorageService.deletePrayer(id);
-    await _loadPrayers();
+    
+    try {
+      await StorageService.deletePrayer(id);
+      await _loadPrayers();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('삭제되었습니다'),
+          duration: Duration(milliseconds: 1000),
+        ),
+      );
+    } catch (e) {
+      debugPrint('기도문 삭제 실패: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('삭제에 실패했습니다. 다시 시도해주세요.'),
+          duration: Duration(seconds: 2),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override

@@ -1,18 +1,27 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 // 키스토어 설정 추가
 import java.util.Properties
 import java.io.FileInputStream
 
-val keystorePropertiesFile = rootProject.file("key.properties")
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.inputStream().use { localProperties.load(it) }
+}
+
+val flutterVersionName = localProperties.getProperty("flutter.versionName") ?: "1.0"
+val flutterVersionCode = localProperties.getProperty("flutter.versionCode")?.toInt() ?: 1
+
 val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+    keystorePropertiesFile.inputStream().use { keystoreProperties.load(it) }
 }
 
 android {
@@ -23,20 +32,20 @@ android {
     ndkVersion = "27.0.12077973"
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
         applicationId = "com.nanoset.repre_prayer_app"
-        minSdk = flutter.minSdkVersion
+        minSdk = 23
         targetSdk = flutter.targetSdkVersion
-        versionCode = 114
-        versionName = "1.1.3"
+        versionCode = flutterVersionCode
+        versionName = flutterVersionName
     }
 
     // 서명 설정 추가
