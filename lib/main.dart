@@ -23,8 +23,18 @@ void setupErrorHandling() {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
-  await AdManager.instance.initialize();
+
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('[main] Firebase 초기화 실패: $e');
+  }
+
+  try {
+    await AdManager.instance.initialize();
+  } catch (e) {
+    debugPrint('[main] AdManager 초기화 실패: $e');
+  }
 
   // 전역 에러 핸들링 설정
   setupErrorHandling();
