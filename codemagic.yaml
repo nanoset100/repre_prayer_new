@@ -19,6 +19,8 @@ workflows:
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.nanoset.leaderprayer
+      groups:
+        - leaderprayer_env
       vars:
         BUNDLE_ID: "com.nanoset.leaderprayer"
 
