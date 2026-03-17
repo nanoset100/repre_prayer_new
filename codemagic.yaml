@@ -1,0 +1,50 @@
+workflows:
+
+  # ─────────────────────────────────────────────
+  # 대표기도문 - iOS App Store 배포
+  # Bundle ID: com.nanoset.leaderprayer
+  # Team ID:   NCB9774DGY
+  # ─────────────────────────────────────────────
+  leaderprayer-ios-release:
+    name: LeaderPrayer iOS Release
+    max_build_duration: 60
+
+    integrations:
+      app_store_connect: LuckyTenAPI
+
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.nanoset.leaderprayer
+      vars:
+        BUNDLE_ID: "com.nanoset.leaderprayer"
+
+    scripts:
+      - name: GoogleService-Info.plist 복원
+        script: |
+          echo "$GOOGLESERVICE_INFO_PLIST" | base64 --decode > ios/Runner/GoogleService-Info.plist
+
+      - name: .env 파일 생성
+        script: |
+          echo "OPENAI_API_KEY=$OPENAI_API_KEY" > .env
+
+      - name: Flutter pub get
+        script: flutter pub get
+
+      - name: Xcode 서명 설정 적용
+        script: xcode-project use-profiles
+
+      - name: Flutter build IPA
+        script: flutter build ipa --release --no-pub --export-options-plist=ios/ExportOptions.plist
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
