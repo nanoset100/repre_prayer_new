@@ -1,57 +1,42 @@
-import 'dart:async';
-import 'dart:ui';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'screens/prayer_input_screen.dart';
-import 'services/ad_manager.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:adx_sdk/adx_sdk.dart';
 
-// 전역 에러 핸들러 설정
-void setupErrorHandling() {
-  FlutterError.onError = (FlutterErrorDetails details) {
-    FlutterError.presentError(details);
-    // 사용자에게 노출되지 않도록 내부 로깅만 수행
-    debugPrint('Flutter 에러: ${details.exception}');
-  };
+// ⚠️ 에러 해결의 핵심 2: 파일을 절대 못 찾을 수 없도록 '프로젝트 이름'을 포함한 정확한 주소를 적었습니다.
+import 'package:repre_prayer_new/screens/prayer_input_screen.dart';
 
-  // 비동기 에러 핸들러
-  PlatformDispatcher.instance.onError = (error, stack) {
-    debugPrint('Uncaught 비동기 에러: $error');
-    return true;
-  };
-}
-
-Future<void> main() async {
+void main() async {
+  // 플러그인 초기화 확인
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 1. Firebase 초기화
   try {
     await Firebase.initializeApp();
+    debugPrint('[main] Firebase 성공');
   } catch (e) {
-    debugPrint('[main] Firebase 초기화 실패: $e');
+    debugPrint('[main] Firebase 실패: $e');
   }
 
+  // 2. AD(x) SDK 초기화
   try {
-    await AdManager.instance.initialize();
+    await AdxSdk.initialize(
+      "69b8f240f57ff90001000012",              // AD(x) APP ID
+      AdxCommon.gdprTypeDirectNotRequired,     // 한국 (비EEA) — 동의창 불필요
+      [],                                      // 테스트 기기 ID
+    );
+    debugPrint('[main] AD(x) 초기화 성공');
   } catch (e) {
-    debugPrint('[main] AdManager 초기화 실패: $e');
+    debugPrint('[main] AD(x) 초기화 실패: $e');
   }
 
-  // 전역 에러 핸들링 설정
-  setupErrorHandling();
-
+  // 3. 환경 변수(.env) 로드
   try {
     await dotenv.load(fileName: ".env");
-    final apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
-    debugPrint('[ENV] .env 파일 로드 성공');
-    debugPrint('[ENV] API KEY 길이: ${apiKey.length} (비어있음: ${apiKey.isEmpty})');
-    if (apiKey.isEmpty) {
-      debugPrint('[ENV] ⚠️ 경고: API 키가 비어있습니다!');
-    } else {
-      debugPrint('[ENV] ✓ API 키 정상 로드 (${apiKey.substring(0, 10)}...)');
-    }
+    debugPrint('[main] dotenv 성공');
   } catch (e) {
-    debugPrint('[ENV] ❌ 환경 설정 로드 실패: $e');
-    // 사용자에게는 오류 메시지를 직접 노출하지 않음
+    debugPrint('[main] dotenv 실패: $e');
   }
 
   runApp(const MyApp());
@@ -64,31 +49,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '대표기도문 작성',
-      theme: ThemeData(primarySwatch: Colors.green),
-      home: const NetworkAwareApp(),
+      theme: ThemeData(
+        primarySwatch: Colors.green,
+        useMaterial3: true,
+      ),
+      // 시작 화면 설정 (원래대로 const를 붙여 안정성을 높였습니다)
+      home: const PrayerInputScreen(),
       debugShowCheckedModeBanner: false,
     );
-  }
-}
-
-// 네트워크 연결 상태 확인 래퍼
-class NetworkAwareApp extends StatefulWidget {
-  const NetworkAwareApp({super.key});
-
-  @override
-  State<NetworkAwareApp> createState() => _NetworkAwareAppState();
-}
-
-class _NetworkAwareAppState extends State<NetworkAwareApp> {
-  @override
-  void initState() {
-    super.initState();
-    // 앱 시작 시 네트워크 체크 제거 - 실제 사용 시에만 체크하도록 변경
-    // Google Play Store 환경에서 불필요한 경고를 방지
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return const PrayerInputScreen();
   }
 }

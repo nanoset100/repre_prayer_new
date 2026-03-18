@@ -11,6 +11,11 @@
         android:label="@string/app_name"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
+
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-7466439784264697~1906656458"/>
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -38,10 +43,6 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
-        <!-- Google AdMob 앱 ID -->
-        <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-8256212284177777~2636031188" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

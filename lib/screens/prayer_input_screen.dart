@@ -8,7 +8,7 @@ import '../utils/update_checker.dart';
 import 'prayer_list_screen.dart';
 import '../services/openai_api_service.dart';
 import '../services/remote_config_service.dart';
-import '../services/ad_manager.dart';
+import 'package:adx_sdk/adx_sdk.dart';
 
 class PrayerInputScreen extends StatefulWidget {
   const PrayerInputScreen({super.key});
@@ -18,6 +18,8 @@ class PrayerInputScreen extends StatefulWidget {
 }
 
 class _PrayerInputScreenState extends State<PrayerInputScreen> {
+  static const String _adxBannerUnitId = "69b8f24ecb688c8ca0286bcd";
+
   List<Map<String, dynamic>> categories = [];
   final Map<String, IconData> _iconMap = {
     '주일예배': Icons.wb_sunny,
@@ -57,6 +59,20 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
       {'label': '특별예배', 'icon': Icons.event},
     ];
     _updatePrayerTypeUI(selectedIndex);
+    _loadAdxBanner();
+  }
+
+  void _loadAdxBanner() {
+    AdxSdk.setBannerPosition(_adxBannerUnitId, AdxCommon.positionBottomCenter);
+    AdxSdk.loadBannerAd(_adxBannerUnitId, AdxCommon.size_320x50);
+  }
+
+  @override
+  void dispose() {
+    AdxSdk.destroyBannerAd(_adxBannerUnitId);
+    prayerTypeController.dispose();
+    prayerContentController.dispose();
+    super.dispose();
   }
 
   void _updatePrayerTypeUI(int idx) {
@@ -550,9 +566,7 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: SafeArea(
-        child: AdManager.instance.buildBannerAd(context),
-      ),
+      bottomNavigationBar: const SizedBox(height: 60),
     );
   }
 }

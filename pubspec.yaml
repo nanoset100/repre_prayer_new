@@ -42,8 +42,7 @@ dependencies:
   url_launcher: ^6.3.0
   firebase_core: ^4.4.0
   firebase_remote_config: ^6.1.4
-  google_mobile_ads: ^6.0.0
-
+  adx_sdk: ^1.0.8
 dev_dependencies:
   flutter_test:
     sdk: flutter

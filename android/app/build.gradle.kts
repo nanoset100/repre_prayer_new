@@ -68,6 +68,11 @@ android {
     }
 }
 
+dependencies {
+    implementation("com.github.adxcorp.ADXLibrary_Android:adx-library-standard:2.8.0")
+    implementation("com.github.adxcorp.ADXLibrary_Android:adx-library-native:2.8.0")
+}
+
 flutter {
     source = "../.."
 }
