@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../models/prayer_model.dart';
-import 'prayer_input_screen.dart';
 
 class PrayerDetailScreen extends StatelessWidget {
   final PrayerModel prayer;
@@ -12,14 +11,7 @@ class PrayerDetailScreen extends StatelessWidget {
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(
-                builder: (context) => const PrayerInputScreen(),
-              ),
-              (route) => false,
-            );
-          },
+          onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
           '기도문 전체 보기',

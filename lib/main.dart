@@ -1,4 +1,5 @@
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -19,16 +20,18 @@ void main() async {
     debugPrint('[main] Firebase 실패: $e');
   }
 
-  // 2. AD(x) SDK 초기화
-  try {
-    await AdxSdk.initialize(
-      "69b8f240f57ff90001000012",              // AD(x) APP ID
-      AdxCommon.gdprTypeDirectNotRequired,     // 한국 (비EEA) — 동의창 불필요
-      [],                                      // 테스트 기기 ID
-    );
-    debugPrint('[main] AD(x) 초기화 성공');
-  } catch (e) {
-    debugPrint('[main] AD(x) 초기화 실패: $e');
+  // 2. AD(x) SDK 초기화 (Android 전용)
+  if (Platform.isAndroid) {
+    try {
+      await AdxSdk.initialize(
+        "69b8f240f57ff90001000012",              // AD(x) APP ID
+        AdxCommon.gdprTypeDirectNotRequired,     // 한국 (비EEA) — 동의창 불필요
+        [],                                      // 테스트 기기 ID
+      );
+      debugPrint('[main] AD(x) 초기화 성공');
+    } catch (e) {
+      debugPrint('[main] AD(x) 초기화 실패: $e');
+    }
   }
 
   // 3. 환경 변수(.env) 로드

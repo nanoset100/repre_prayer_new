@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/prayer_model.dart';
@@ -63,13 +65,14 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
   }
 
   void _loadAdxBanner() {
+    if (!Platform.isAndroid) return;
     AdxSdk.setBannerPosition(_adxBannerUnitId, AdxCommon.positionBottomCenter);
     AdxSdk.loadBannerAd(_adxBannerUnitId, AdxCommon.size_320x50);
   }
 
   @override
   void dispose() {
-    AdxSdk.destroyBannerAd(_adxBannerUnitId);
+    if (Platform.isAndroid) AdxSdk.destroyBannerAd(_adxBannerUnitId);
     prayerTypeController.dispose();
     prayerContentController.dispose();
     super.dispose();
@@ -195,7 +198,7 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
       // 1초 후 자동으로 PrayerListScreen으로 이동
       Future.delayed(const Duration(milliseconds: 1000), () {
         if (mounted) {
-          Navigator.of(context).pushReplacement(
+          Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const PrayerListScreen()),
           );
         }
@@ -295,6 +298,11 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
     );
   }
 
+  void _showCloseAd() {
+    const platform = MethodChannel('com.nanoset.repre_prayer_app/close_ad');
+    platform.invokeMethod('showCloseAd').catchError((_) {});
+  }
+
   @override
   Widget build(BuildContext context) {
     final Color gridBg = const Color(0xFFD4F4E0);
@@ -304,7 +312,12 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
     final Color viewBtnText = const Color(0xFF218C5A);
     final Color saveBtnBg = const Color(0xFFEAEAEA);
     final double gridBtnSize = MediaQuery.of(context).size.width / 3 - 28;
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _showCloseAd();
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text(
           '대표기도문 작성하기',
@@ -566,7 +579,10 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: const SizedBox(height: 60),
+      bottomNavigationBar: SizedBox(
+        height: 60 + MediaQuery.of(context).viewPadding.bottom,
+      ),
+    ),
     );
   }
 }
