@@ -38,7 +38,12 @@ workflows:
 
       - name: iOS 빌드에서 adx_sdk 제거 (Android 전용 SDK)
         script: |
-          python3 -c "import json; f=open('.flutter-plugins-dependencies'); deps=json.load(f); f.close(); deps['plugins']['ios']=[p for p in deps['plugins'].get('ios',[]) if p.get('name')!='adx_sdk']; f=open('.flutter-plugins-dependencies','w'); json.dump(deps,f,indent=2); f.close(); print('adx_sdk removed from iOS plugins')"
+          # GeneratedPluginRegistrant.m에서 AdxSdkPlugin 직접 제거 (컴파일 대상 파일)
+          sed -i '' '/#import.*adx_sdk/d' ios/Runner/GeneratedPluginRegistrant.m
+          sed -i '' '/@import adx_sdk/d' ios/Runner/GeneratedPluginRegistrant.m
+          sed -i '' '/AdxSdkPlugin/d' ios/Runner/GeneratedPluginRegistrant.m
+          echo "=== adx_sdk removed from GeneratedPluginRegistrant.m ==="
+          cat ios/Runner/GeneratedPluginRegistrant.m
 
       - name: Xcode 서명 설정 적용
         script: xcode-project use-profiles
