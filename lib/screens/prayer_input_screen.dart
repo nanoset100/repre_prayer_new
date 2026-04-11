@@ -243,39 +243,14 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
     } catch (e) {
       debugPrint('AI 생성 실패: $e');
       if (mounted) {
-        // 네트워크 오류인지 확인
-        final isNetworkError = e.toString().contains('SocketException') ||
-            e.toString().contains('TimeoutException') ||
-            e.toString().contains('연결');
-
-        final errorMessage = isNetworkError
-            ? '인터넷 연결을 확인해주세요.\n네트워크가 불안정하거나 연결이 끊어졌습니다.\n\n'
-                'Please check your internet connection.\nNetwork is unstable or disconnected.'
-            : 'AI 서비스가 일시적으로 불안정합니다.\n잠시 후 다시 시도해주세요.\n\n'
-                'AI service is temporarily unavailable.\nPlease try again in a moment.';
-
-        showDialog(
-          context: context,
-          builder:
-              (context) => AlertDialog(
-                title: const Text('기도문 생성 안내\n(Prayer Generation Notice)'),
-                content: Text(
-                  '$errorMessage\n샘플 기도문을 대신 사용하시겠어요?\nWould you like to use a sample prayer instead?',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      _insertSamplePrayer(prayerType);
-                    },
-                    child: const Text('예 (Yes)'),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('아니오 (No)'),
-                  ),
-                ],
-              ),
+        // API 실패 시 자동으로 샘플 기도문 삽입 (에러 다이얼로그 없이 자연스럽게 처리)
+        _insertSamplePrayer(prayerType);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('AI 연결 중 문제가 발생하여 샘플 기도문을 제공합니다. 내용을 수정하여 사용하세요.'),
+            duration: Duration(seconds: 3),
+            backgroundColor: Color(0xFF795548),
+          ),
         );
       }
     } finally {
@@ -284,23 +259,32 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
   }
 
   void _insertSamplePrayer(String prayerType) {
+    final displayType = prayerType.isNotEmpty ? prayerType : '예배';
     String samplePrayer =
-        '사랑과 은혜의 하나님, 이 시간 저희 예배를 받아주시옵소서.\n주님의 은혜와 사랑이 우리 모두에게 충만하게 임하게 하시고,\n말씀을 통해 새 힘을 얻게 하소서.\n예수님의 이름으로 기도합니다. 아멘.';
+        '사랑과 은혜가 풍성하신 하나님 아버지, 오늘 이 $displayType 시간에 저희를 불러주시고 함께해 주심을 감사드립니다.\n\n'
+        '주님, 바쁜 일상 속에서도 이렇게 주님 앞에 나아올 수 있는 은혜에 감사합니다. '
+        '저희의 마음을 열어주시고, 주님의 말씀 앞에 겸손히 서게 하여 주옵소서.\n\n'
+        '하나님, 저희의 부족함과 연약함을 고백합니다. '
+        '때로는 주님의 뜻보다 저희의 생각을 앞세우고, 이웃을 사랑하기보다 자신만을 돌아보았습니다. '
+        '이 시간 저희의 허물을 용서하시고, 새롭게 하여 주옵소서.\n\n'
+        '이 자리에 함께한 모든 성도들의 가정과 삶 위에 주님의 평강이 임하게 하시고, '
+        '아픈 분들에게는 치유의 손길을, 어려움 가운데 있는 분들에게는 위로와 힘을 더하여 주옵소서. '
+        '오늘 전해주실 말씀을 통해 저희 삶이 변화되고, 주님의 뜻대로 살아가는 저희가 되게 하여 주옵소서.\n\n'
+        '이 모든 말씀을 우리 주 예수 그리스도의 이름으로 기도합니다. 아멘.';
     setState(() {
       prayerContentController.text = samplePrayer;
       _lastAiPrayer = samplePrayer;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('샘플 기도문이 입력되었습니다. (Sample prayer inserted)'),
-        duration: Duration(seconds: 3),
-      ),
-    );
   }
 
-  void _showCloseAd() {
+  Future<bool> _showCloseAd() async {
     const platform = MethodChannel('com.nanoset.repre_prayer_app/close_ad');
-    platform.invokeMethod('showCloseAd').catchError((_) {});
+    try {
+      final bool? result = await platform.invokeMethod<bool>('showCloseAd');
+      return result ?? false;
+    } catch (e) {
+      return false;
+    }
   }
 
   @override
@@ -313,9 +297,12 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
     final Color saveBtnBg = const Color(0xFFEAEAEA);
     final double gridBtnSize = MediaQuery.of(context).size.width / 3 - 28;
     return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (!didPop) _showCloseAd();
+      canPop: true, // Predictive Back Gesture 애니메이션 허용
+      onPopInvokedWithResult: (didPop, result) async {
+        // canPop: true일 때 didPop은 항상 true이지만, 
+        // 루트 화면에서는 시스템이 종료되기 전 Native OnBackInvokedCallback이 먼저 가로채서 광고를 보여줌
+        if (didPop) return; 
+        await _showCloseAd();
       },
       child: Scaffold(
       appBar: AppBar(
