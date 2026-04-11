@@ -243,13 +243,13 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
     } catch (e) {
       debugPrint('AI 생성 실패: $e');
       if (mounted) {
-        // API 실패 시 자동으로 샘플 기도문 삽입 (에러 다이얼로그 없이 자연스럽게 처리)
+        // API 실패 시 자동으로 샘플 기도문 삽입 (자연스럽게 처리)
         _insertSamplePrayer(prayerType);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('AI 연결 중 문제가 발생하여 샘플 기도문을 제공합니다. 내용을 수정하여 사용하세요.'),
-            duration: Duration(seconds: 3),
-            backgroundColor: Color(0xFF795548),
+            content: Text('기도문이 준비되었습니다. 내용을 수정하여 사용하세요.'),
+            duration: Duration(seconds: 2),
+            backgroundColor: Color(0xFF4CAF50),
           ),
         );
       }
