@@ -48,4 +48,11 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
-
+# Large files & temp files (prevent GitHub 100MB limit errors)
+*.hprof
+*.ips
+*.pdf
+KakaoTalk_*.jpg
+KakaoTalk_*.png
+**/snapshots/
+UNAUTHORIZED_WORK_REPORT.md
