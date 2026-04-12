@@ -2,9 +2,37 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'remote_config_service.dart';
 
 class OpenAIApiService {
-  static String get _apiKey => dotenv.env['OPENAI_API_KEY'] ?? '';
+  /// API 키 우선순위: Remote Config → dotenv
+  static String get _apiKey {
+    // 1순위: Firebase Remote Config (iOS/Android 모두 안정적으로 동작)
+    try {
+      final rcKey = RemoteConfigService().getOpenAiApiKey();
+      if (rcKey.isNotEmpty) {
+        debugPrint('[OpenAI] API 키 출처: Remote Config');
+        return rcKey;
+      }
+    } catch (e) {
+      debugPrint('[OpenAI] Remote Config 키 로드 실패: $e');
+    }
+
+    // 2순위: dotenv (.env 파일이 있을 경우)
+    try {
+      final envKey = dotenv.env['OPENAI_API_KEY'] ?? '';
+      if (envKey.isNotEmpty) {
+        debugPrint('[OpenAI] API 키 출처: dotenv');
+        return envKey;
+      }
+    } catch (e) {
+      debugPrint('[OpenAI] dotenv 키 로드 실패: $e');
+    }
+
+    debugPrint('[OpenAI] ❌ 모든 방법으로 API 키 로드 실패');
+    return '';
+  }
+
   static const String _apiUrl = 'https://api.openai.com/v1/chat/completions';
   static const int _maxRetries = 2; // 최대 재시도 횟수
   static const Duration _timeout = Duration(seconds: 30); // API 타임아웃
