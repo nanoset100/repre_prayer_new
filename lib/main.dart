@@ -7,6 +7,7 @@ import 'package:adx_sdk/adx_sdk.dart';
 
 // ⚠️ 에러 해결의 핵심 2: 파일을 절대 못 찾을 수 없도록 '프로젝트 이름'을 포함한 정확한 주소를 적었습니다.
 import 'package:repre_prayer_new/screens/prayer_input_screen.dart';
+import 'package:repre_prayer_new/services/remote_config_service.dart';
 
 void main() async {
   // 플러그인 초기화 확인
@@ -20,7 +21,15 @@ void main() async {
     debugPrint('[main] Firebase 실패: $e');
   }
 
-  // 2. AD(x) SDK 초기화 (Android 전용)
+  // 2. Remote Config 초기화 (API 키 로드) - 앱 시작 전 완료 보장
+  try {
+    await RemoteConfigService().initialize();
+    debugPrint('[main] Remote Config 성공');
+  } catch (e) {
+    debugPrint('[main] Remote Config 실패: $e');
+  }
+
+  // 3. AD(x) SDK 초기화 (Android 전용)
   if (Platform.isAndroid) {
     try {
       await AdxSdk.initialize(

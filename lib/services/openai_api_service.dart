@@ -9,9 +9,10 @@ class OpenAIApiService {
   static String get _apiKey {
     // 1순위: Firebase Remote Config (iOS/Android 모두 안정적으로 동작)
     try {
-      final rcKey = RemoteConfigService().getOpenAiApiKey();
+      final rcKey = RemoteConfigService().getOpenAiApiKey().trim();
       if (rcKey.isNotEmpty) {
         debugPrint('[OpenAI] API 키 출처: Remote Config');
+        debugPrint('[OpenAI] 로드된 키 앞부분 확인: ${rcKey.length > 15 ? rcKey.substring(0, 15) : rcKey}...');
         return rcKey;
       }
     } catch (e) {
@@ -20,9 +21,10 @@ class OpenAIApiService {
 
     // 2순위: dotenv (.env 파일이 있을 경우)
     try {
-      final envKey = dotenv.env['OPENAI_API_KEY'] ?? '';
+      final envKey = (dotenv.env['OPENAI_API_KEY'] ?? '').trim();
       if (envKey.isNotEmpty) {
         debugPrint('[OpenAI] API 키 출처: dotenv');
+        debugPrint('[OpenAI] 로드된 키 앞부분 확인: ${envKey.length > 15 ? envKey.substring(0, 15) : envKey}...');
         return envKey;
       }
     } catch (e) {

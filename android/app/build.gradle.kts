@@ -26,7 +26,7 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "com.nanoset.repre_prayer_app"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 36
     
     // NDK 버전 설정 (오류 수정)
     ndkVersion = "27.0.12077973"
