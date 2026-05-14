@@ -87,7 +87,7 @@ class OpenAIApiService {
               },
               {'role': 'user', 'content': '대표기도문을 작성해주세요.'},
             ],
-            'max_tokens': 2000,
+            'max_tokens': 3500,
             'temperature': 0.7,
           }),
         ).timeout(_timeout); // 타임아웃 설정
