@@ -43,4 +43,18 @@ post_install do |installer|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
     end
   end
+
+  # adx_sdk는 Android 전용 SDK — iOS GeneratedPluginRegistrant.m에서 자동 제거
+  # flutter pub get 후 pod install 시 항상 재적용됨
+  registrant_path = File.join(__dir__, 'Runner', 'GeneratedPluginRegistrant.m')
+  if File.exist?(registrant_path)
+    content = File.read(registrant_path)
+    original = content.dup
+    content.gsub!(/#if __has_include\(<adx_sdk\/AdxSdkPlugin\.h>\).*?#endif\n/m, '')
+    content.gsub!(/\s*\[AdxSdkPlugin registerWithRegistrar:\[registry registrarForPlugin:@"AdxSdkPlugin"\]\];\n/, '')
+    if content != original
+      File.write(registrant_path, content)
+      puts "✅ adx_sdk removed from GeneratedPluginRegistrant.m (Android-only SDK)"
+    end
+  end
 end

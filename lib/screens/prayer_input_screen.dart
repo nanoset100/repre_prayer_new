@@ -95,8 +95,7 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
   }
 
   Future<void> _initRemoteConfig() async {
-    final rc = RemoteConfigService();
-    await rc.initialize();
+    // main.dart에서 이미 initialize() 완료 — 카테고리 갱신만 수행
     _updateCategories();
     if (mounted) {
       UpdateChecker.checkUpdate(context);
@@ -297,12 +296,13 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
     final Color saveBtnBg = const Color(0xFFEAEAEA);
     final double gridBtnSize = MediaQuery.of(context).size.width / 3 - 28;
     return PopScope(
-      canPop: true, // Predictive Back Gesture 애니메이션 허용
+      canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
-        // canPop: true일 때 didPop은 항상 true이지만, 
-        // 루트 화면에서는 시스템이 종료되기 전 Native OnBackInvokedCallback이 먼저 가로채서 광고를 보여줌
-        if (didPop) return; 
-        await _showCloseAd();
+        if (didPop) return;
+        final adShown = await _showCloseAd();
+        if (!adShown && mounted) {
+          Navigator.of(context).pop();
+        }
       },
       child: Scaffold(
       appBar: AppBar(
