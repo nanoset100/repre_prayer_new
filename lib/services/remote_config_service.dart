@@ -13,18 +13,15 @@ class RemoteConfigService {
   static const String _minVersionKey = 'min_version';
   static const String _updateMsgKey = 'update_msg';
   static const String _updateUrlKey = 'update_url';
-  static const String _openAiApiKeyKey = 'openai_api_key';
-
   Future<void> initialize() async {
     try {
       await _remoteConfig.setDefaults({
         _categoriesKey: json.encode([
           "주일예배", "금요일예배", "구역예배", "새벽예배", "심방예배", "수요예배", "가정예배", "병원예배", "특별예배"
         ]),
-        _minVersionKey: 125, // v1.1.14 빌드 번호
+        _minVersionKey: 125,
         _updateMsgKey: "새로운 기능(기독교 절기 반영 등)이 추가되었습니다. 최신 버전으로 업데이트하여 더욱 은혜로운 기도문을 만나보세요!",
         _updateUrlKey: "https://play.google.com/store/apps/details?id=com.nanoset.repre_prayer_app",
-        _openAiApiKeyKey: '',
       });
 
       await _remoteConfig.setConfigSettings(RemoteConfigSettings(
@@ -61,5 +58,4 @@ class RemoteConfigService {
   int getMinVersion() => _remoteConfig.getInt(_minVersionKey);
   String getUpdateMsg() => _remoteConfig.getString(_updateMsgKey);
   String getUpdateUrl() => _remoteConfig.getString(_updateUrlKey);
-  String getOpenAiApiKey() => _remoteConfig.getString(_openAiApiKeyKey);
 }
