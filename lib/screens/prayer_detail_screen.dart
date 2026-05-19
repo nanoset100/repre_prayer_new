@@ -36,6 +36,7 @@ class PrayerDetailScreen extends StatelessWidget {
           elevation: 0,
         ),
         backgroundColor: const Color(0xFFFFF4F8),
+        bottomNavigationBar: const SizedBox(height: 60), // 배너 광고 높이만큼 여백
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
