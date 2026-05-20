@@ -19,11 +19,7 @@ class PrayerDetailScreen extends StatelessWidget {
           Navigator.of(context).pop();
         }
       },
-      child: Builder(
-        builder: (context) {
-          debugPrint('ADX inset.bottom=${MediaQuery.of(context).viewPadding.bottom}, '
-              'reserved=${_adxBannerHeight + MediaQuery.of(context).viewPadding.bottom + _bannerSafetyMargin}');
-          return Scaffold(
+      child: Scaffold(
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -92,8 +88,6 @@ class PrayerDetailScreen extends StatelessWidget {
             ],
           ),
         ),
-          );
-        },
       ),
     );
   }
