@@ -566,9 +566,13 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
           ),
         ),
       ),
-      bottomNavigationBar: SizedBox(
-        height: 60 + MediaQuery.of(context).viewPadding.bottom,
-      ),
+      bottomNavigationBar: Platform.isAndroid
+          ? SizedBox(
+              height: 50.0  // ADX 배너 고정 높이
+                  + MediaQuery.of(context).viewPadding.bottom
+                  + 16.0,   // 안전 여백
+            )
+          : null,
     ),
     );
   }

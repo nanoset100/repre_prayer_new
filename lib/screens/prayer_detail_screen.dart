@@ -1,9 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../models/prayer_model.dart';
 
 class PrayerDetailScreen extends StatelessWidget {
   final PrayerModel prayer;
   const PrayerDetailScreen({super.key, required this.prayer});
+
+  static const double _adxBannerHeight = 50.0;
+  static const double _bannerSafetyMargin = 16.0;
 
   @override
   Widget build(BuildContext context) {
@@ -15,7 +19,11 @@ class PrayerDetailScreen extends StatelessWidget {
           Navigator.of(context).pop();
         }
       },
-      child: Scaffold(
+      child: Builder(
+        builder: (context) {
+          debugPrint('ADX inset.bottom=${MediaQuery.of(context).viewPadding.bottom}, '
+              'reserved=${_adxBannerHeight + MediaQuery.of(context).viewPadding.bottom + _bannerSafetyMargin}');
+          return Scaffold(
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -36,7 +44,13 @@ class PrayerDetailScreen extends StatelessWidget {
           elevation: 0,
         ),
         backgroundColor: const Color(0xFFFFF4F8),
-        bottomNavigationBar: SizedBox(height: 60 + MediaQuery.of(context).viewPadding.bottom), // 배너 광고 높이 + 하단 안전 영역
+        bottomNavigationBar: Platform.isAndroid
+            ? SizedBox(
+                height: _adxBannerHeight
+                    + MediaQuery.of(context).viewPadding.bottom
+                    + _bannerSafetyMargin,
+              )
+            : null,
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -78,6 +92,8 @@ class PrayerDetailScreen extends StatelessWidget {
             ],
           ),
         ),
+          );
+        },
       ),
     );
   }
