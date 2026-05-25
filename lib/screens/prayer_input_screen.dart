@@ -33,6 +33,12 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
     '수요예배': Icons.water_drop,
     '가정예배': Icons.home,
     '성령강림': Icons.whatshot,
+    '성탄예배': Icons.celebration,
+    '추수감사': Icons.agriculture,
+    '어린이날': Icons.child_care,
+    '어버이날': Icons.favorite,
+    '부활절':   Icons.brightness_high,
+    '고난주간': Icons.volunteer_activism,
     '특별예배': Icons.event,
   };
 
