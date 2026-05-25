@@ -32,7 +32,7 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
     '심방예배': Icons.home_repair_service,
     '수요예배': Icons.water_drop,
     '가정예배': Icons.home,
-    '병원예배': Icons.local_hospital,
+    '성령강림': Icons.whatshot,
     '특별예배': Icons.event,
   };
 
@@ -57,7 +57,7 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
       {'label': '심방예배', 'icon': Icons.home_repair_service},
       {'label': '수요예배', 'icon': Icons.water_drop},
       {'label': '가정예배', 'icon': Icons.home},
-      {'label': '병원예배', 'icon': Icons.local_hospital},
+      {'label': '성령강림', 'icon': Icons.whatshot},
       {'label': '특별예배', 'icon': Icons.event},
     ];
     _updatePrayerTypeUI(selectedIndex);

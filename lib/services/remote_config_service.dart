@@ -17,7 +17,7 @@ class RemoteConfigService {
     try {
       await _remoteConfig.setDefaults({
         _categoriesKey: json.encode([
-          "주일예배", "금요일예배", "구역예배", "새벽예배", "심방예배", "수요예배", "가정예배", "병원예배", "특별예배"
+          "주일예배", "금요예배", "구역예배", "새벽예배", "심방예배", "수요예배", "가정예배", "성령강림", "특별예배"
         ]),
         _minVersionKey: 125,
         _updateMsgKey: "새로운 기능(기독교 절기 반영 등)이 추가되었습니다. 최신 버전으로 업데이트하여 더욱 은혜로운 기도문을 만나보세요!",
@@ -51,7 +51,7 @@ class RemoteConfigService {
       return decoded.map((e) => e.toString()).toList();
     } catch (e) {
       debugPrint('[RemoteConfig] 카테고리 파싱 실패: $e');
-      return ["주일예배", "금요일예배", "구역예배", "새벽예배", "심방예배", "수요예배", "가정예배", "병원예배", "특별예배"];
+      return ["주일예배", "금요예배", "구역예배", "새벽예배", "심방예배", "수요예배", "가정예배", "성령강림", "특별예배"];
     }
   }
 
