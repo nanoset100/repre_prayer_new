@@ -385,6 +385,7 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
                     Expanded(
                       child: TextField(
                         controller: prayerTypeController,
+                        onChanged: (_) => setState(() {}),
                         decoration: InputDecoration(
                           hintText: _isPrayerTypeEditable ? '예배이름을 입력하세요' : '',
                           hintStyle: const TextStyle(
