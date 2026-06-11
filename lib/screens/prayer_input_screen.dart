@@ -106,6 +106,12 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
     if (mounted) {
       UpdateChecker.checkUpdate(context);
     }
+    // fetchAndActivate() 직후에는 getString()이 아직 새 값을 반영하지 못하는
+    // 내부 비동기 지연이 있을 수 있어, 잠시 후 한 번 더 조용히 재확인한다.
+    await Future.delayed(const Duration(seconds: 2));
+    if (mounted) _updateCategories();
+    await Future.delayed(const Duration(seconds: 3));
+    if (mounted) _updateCategories();
   }
 
   void _updateCategories() {
@@ -312,9 +318,56 @@ class _PrayerInputScreenState extends State<PrayerInputScreen> {
       },
       child: Scaffold(
       appBar: AppBar(
-        title: const Text(
-          '대표기도문 작성하기',
-          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        title: GestureDetector(
+          onLongPress: () {
+            showDialog(
+              context: context,
+              builder: (dialogContext) => StatefulBuilder(
+                builder: (context, setDialogState) {
+                  final screenLabels = categories
+                      .map((c) => c['label'].toString())
+                      .join(', ');
+                  final freshLabels = RemoteConfigService()
+                      .getCategories()
+                      .join(', ');
+                  return AlertDialog(
+                    title: const Text('Remote Config 진단'),
+                    content: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('[화면에 표시 중인 categories]\n$screenLabels'),
+                          const SizedBox(height: 12),
+                          Text('[지금 getCategories() 호출 결과]\n$freshLabels'),
+                          const SizedBox(height: 12),
+                          Text(RemoteConfigService().getDebugInfo()),
+                        ],
+                      ),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () async {
+                          await RemoteConfigService().fetchAndActivate();
+                          _updateCategories();
+                          setDialogState(() {});
+                        },
+                        child: const Text('다시 가져오기'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(dialogContext),
+                        child: const Text('닫기'),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            );
+          },
+          child: const Text(
+            '대표기도문 작성하기',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
         ),
         centerTitle: true,
         backgroundColor: mainGreen,

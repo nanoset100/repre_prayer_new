@@ -58,4 +58,15 @@ class RemoteConfigService {
   int getMinVersion() => _remoteConfig.getInt(_minVersionKey);
   String getUpdateMsg() => _remoteConfig.getString(_updateMsgKey);
   String getUpdateUrl() => _remoteConfig.getString(_updateUrlKey);
+
+  /// 진단용: 마지막 fetch 상태/시각/원시값을 문자열로 반환
+  String getDebugInfo() {
+    final status = _remoteConfig.lastFetchStatus;
+    final time = _remoteConfig.lastFetchTime;
+    final raw = _remoteConfig.getString(_categoriesKey);
+    return 'lastFetchStatus: $status\n'
+        'lastFetchTime: $time\n'
+        'now: ${DateTime.now()}\n'
+        'worship_categories(raw):\n$raw';
+  }
 }
